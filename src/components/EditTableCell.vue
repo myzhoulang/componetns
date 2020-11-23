@@ -8,7 +8,7 @@
       v-show="!isShowInput"
     >
       <Col :span="typeof isEditing === 'undefined' ? 20 : 24">
-        <div class="text">{{ text || "-" }}</div>
+        <div class="text">{{ text || '-' }}</div>
       </Col>
       <Col
         :span="4"
@@ -52,59 +52,59 @@
 </template>
 
 <script>
-import Schema from "async-validator";
+import Schema from 'async-validator';
 
 let timer = null;
 let timer2 = null;
 export default {
-  name: "EditTableCell",
+  name: 'EditTableCell',
   props: {
     // 数据的可以
     dataKey: {
-      type: String
+      type: String,
     },
     // 当前数据在数据集中的索引位置
     index: {
       type: Number,
-      required: true
+      required: true,
     },
     // 显示的值
     text: {
-      type: [String, Number]
+      type: [String, Number],
     },
     // 当前数据的数据类型
     dataType: {
       type: String,
-      default: "string"
+      default: 'string',
     },
     // 当前数据可修改的规则
     // 验证规则参考 https://github.com/yiminghe/async-validator
     rules: {
-      type: Array
+      type: Array,
     },
     // 表单控件的placeholder
     placeholder: {
-      type: String
+      type: String,
     },
     // 表单控件的大小
     size: {
       type: String,
-      default: "default"
+      default: 'default',
     },
     // iview 上的属性透传到 iview 表单控件
     iviewProps: {
-      type: Object
+      type: Object,
     },
     // 是否处于编辑状态
     isEditing: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   watch: {
     isEditing(value) {
       this.isShowInput = value;
-    }
+    },
   },
   data() {
     return {
@@ -112,13 +112,13 @@ export default {
       isShowEditIcon: false,
       isShowInput: false,
       validator: null,
-      invalid: false
+      invalid: false,
     };
   },
   created() {
     // 根据传入的规则初始化验证器
     const descriptor = {
-      [this.dataKey]: this.rules
+      [this.dataKey]: this.rules,
     };
     this.validator = new Schema(descriptor);
 
@@ -161,9 +161,9 @@ export default {
       this.validate().then(errors => {
         if (!errors) {
           this.isShowInput = false;
-          this.$emit("cellChange", { dataKey, value, index }, $event);
+          this.$emit('cellChange', { dataKey, value, index }, $event);
         } else {
-          const message = errors.map(item => item.message).join("<br />");
+          const message = errors.map(item => item.message).join('<br />');
           this.$Message.error(message);
         }
       });
@@ -173,7 +173,7 @@ export default {
     showInput() {
       this.isShowInput = true;
       this.$nextTick(() => {
-        this.$refs["input-control"]?.focus();
+        this.$refs['input-control']?.focus();
       });
     },
 
@@ -186,12 +186,12 @@ export default {
         this.validate().then(errors => {
           if (!errors) {
             const { value, dataKey, index } = this;
-            this.$emit("cellChange", { value, dataKey, index });
+            this.$emit('cellChange', { value, dataKey, index });
           }
         });
       }, 100);
-    }
-  }
+    },
+  },
 };
 </script>
 

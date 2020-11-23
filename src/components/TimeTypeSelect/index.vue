@@ -1,6 +1,6 @@
 <template>
-  <div :class="['time-type-select', className]">
-    <Row :gutter="gutter" type="flex" align="middle">
+  <div class="time-type-select">
+    <Row v-bind="ivewRowProps">
       <Col class="label" v-if="isShowLabel">{{ label }}</Col>
       <Col>
         <Select
@@ -94,17 +94,23 @@
 </template>
 
 <script>
-import moment from 'moment';
+import * as dayjs from 'dayjs';
 
 export default {
   name: 'TimeTypeSelect',
   filters: {
     weekFormart(value) {
-      const d = moment(value[0]);
-      return `${`${d.year()} - ${d.week()}`}th`;
+      const d = dayjs(value[0]);
+      return `${d.year()} - ${d.week()}th`;
     },
   },
   props: {
+    // iview 中的 row props
+    ivewRowProps: {
+      type: Object,
+      default: () => ({}),
+    },
+
     // iview 中的 datePicker Props
     iviewDatePickerProps: {
       type: Object,
@@ -160,30 +166,10 @@ export default {
 
     // size 对应 iview 中的size
     // 值有： small,default,large
+    // 组件内部所有的 iview 组件的 size 将会统一使用这个
     size: {
       type: String,
       default: 'default',
-    },
-
-    // 组件包裹层的 class
-    className: {
-      type: String,
-      default: '',
-    },
-
-    // 对应 iview 中的 Row 组件中的 justify
-    // 控制组件中的表单控件水平摆放位置
-    // 可选值有 start、end、center、space-around、space-between
-    justify: {
-      type: String,
-      default: 'start',
-    },
-
-    // 对应 iview 中的 Row 组件中的 gutter
-    // 控制组件中的表单控件之间的间距
-    gutter: {
-      type: Number,
-      default: 8,
     },
 
     // 对应 iview 中时间控件的 options 选项
@@ -269,7 +255,7 @@ export default {
       default() {
         return {
           type: 'month',
-          date: moment(new Date().setDate(1)).format('yyyy/MM/DD'),
+          date: dayjs(new Date().setDate(1)).format('yyyy/MM/DD'),
           quarter: '',
         };
       },
@@ -299,7 +285,6 @@ export default {
   watch: {
     value: {
       handler(value = {}) {
-        console.log('watch', value);
         const { type, date, quarter } = value;
         this.type = type || 'month';
         this.date = date || null;
@@ -318,7 +303,7 @@ export default {
       week(date) {
         return (
           date.valueOf() >
-          moment(new Date())
+          dayjs(new Date())
             .day(6)
             .valueOf()
         );
@@ -380,7 +365,7 @@ export default {
       const days = [];
       for (let i = 0; i < 7; i++) {
         days.push(
-          moment(date)
+          dayjs(date)
             .day(i)
             .format(this.format['week']),
         );
@@ -390,7 +375,7 @@ export default {
 
     // 获取一个时间区间
     getDateRange() {
-      const oDate = moment(new Date());
+      const oDate = dayjs(new Date());
       return [oDate.format('yyyy/MM/01'), oDate.format('yyyy/MM/DD')];
     },
 
@@ -404,12 +389,6 @@ export default {
         date2 = this.getDateRange();
       }
       this.$emit('input', {
-        type,
-        date: date2,
-        quarter: type === 'quarter' ? 1 : '',
-      });
-
-      this.$emit('typeChange', {
         type,
         date: date2,
         quarter: type === 'quarter' ? 1 : '',
@@ -430,11 +409,6 @@ export default {
       }
       this.isShowDatePicker = false;
       this.$emit('input', {
-        type,
-        date: date2,
-        quarter,
-      });
-      this.$emit('change', {
         type,
         date: date2,
         quarter,

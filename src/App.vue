@@ -1,102 +1,99 @@
 <template>
   <div id="app">
-    {{data}}
+    {{ data }}
     <PageContent>
-      <Table
-        :columns="columns"
-        @toggle="toggle"
-      ></Table>
+      <Table :columns="columns" @toggle="toggle"></Table>
     </PageContent>
   </div>
 </template>
 
 <script>
-import EditTableCell from "@/components/EditTableCell";
-import Table from "./components/EditTable";
-import PageContent from "./components/PageContent";
+import EditTableCell from '@/components/EditTableCell';
+import Table from './components/EditTable';
+import PageContent from './components/PageContent';
 
 export default {
-  name: "App",
+  name: 'App',
   data() {
     return {
       data: [],
       columns: [],
       types: [
         {
-          value: "date",
-          label: "按天"
+          value: 'date',
+          label: '按天',
         },
         {
-          value: "week",
-          label: "按周"
+          value: 'week',
+          label: '按周',
         },
         {
-          value: "month",
-          label: "按月"
+          value: 'month',
+          label: '按月',
         },
         {
-          value: "quarter",
-          label: "按季度"
+          value: 'quarter',
+          label: '按季度',
         },
         {
-          value: "year",
-          label: "按年"
-        }
+          value: 'year',
+          label: '按年',
+        },
       ],
       value: {
-        type: "month",
+        type: 'month',
         date: null,
-        quarter: ""
+        quarter: '',
       },
       datePickerOptions: {
         disabledDate(date) {
           const disabledMonth = date.getMonth();
           return disabledMonth >= 11;
-        }
+        },
       },
-      isEditing: false
+      isEditing: false,
     };
   },
   components: {
     Table,
-    PageContent
+    PageContent,
   },
 
   created() {
     this.data = [
       {
-        name: "John Brown",
+        name: 'John Brown',
         age: 18,
-        address: "New York No. 1 Lake Park",
-        date: "2016-07-03",
-        email: "JohnBrown@gmail.com"
+        address: 'New York No. 1 Lake Park',
+        date: '2016-07-03',
+        email: 'JohnBrown@gmail.com',
       },
       {
-        name: "Jim Green",
+        name: 'Jim Green',
         age: 24,
-        address: "London No. 1 Lake Park",
-        date: "2016-10-01",
-        email: "JimGreen@gmail.com"
+        address: 'London No. 1 Lake Park',
+        date: '2016-10-01',
+        email: 'JimGreen@gmail.com',
       },
       {
-        name: "Joe Black",
+        name: 'Joe Black',
         age: 30,
-        address: "Sydney No. 1 Lake Park",
-        date: "2016-10-02",
-        email: "JoeBlack@gmail.com"
+        address: 'Sydney No. 1 Lake Park',
+        date: '2016-10-02',
+        email: 'JoeBlack@gmail.com',
       },
       {
-        name: "Jon Snow",
+        name: 'Jon Snow',
         age: 26,
-        address: "Ottawa No. 2 Lake Park",
-        date: "2016-10-04",
-        email: "JonSnow@gmail.com"
-      }
+        address: 'Ottawa No. 2 Lake Park',
+        date: '2016-10-04',
+        email: 'JonSnow@gmail.com',
+      },
     ];
     this.columns = [
       {
-        title: "Date",
-        key: "date",
+        title: 'Date',
+        key: 'date',
         resizable: true,
         tooltip: true,
         render: (h, { row, column, index }) => {
@@ -107,16 +104,16 @@ export default {
               index={index}
               isEditing={this.isEditing}
               placeholder="请输入一个日期"
-              rules={[{ required: true, message: "这是一个必填的字段" }]}
+              rules={[{ required: true, message: '这是一个必填的字段' }]}
               onCellChange={this.cellChange}
             />
           );
         },
-        width: 160
+        width: 160,
       },
       {
-        title: "Email",
-        key: "email",
+        title: 'Email',
+        key: 'email',
         resizable: true,
         tooltip: true,
         render: (h, { row, column, index }) => {
@@ -128,29 +125,29 @@ export default {
               isEditing={this.isEditing}
               placeholder="请输入一个邮箱"
               rules={[
-                { required: true, message: "这是一个必填的字段" },
-                { type: "email", message: "该字段的值是一个邮箱" }
+                { required: true, message: '这是一个必填的字段' },
+                { type: 'email', message: '该字段的值是一个邮箱' },
               ]}
               onCellChange={this.cellChange}
             />
           );
         },
-        width: 220
+        width: 220,
       },
       {
-        title: "Name",
-        key: "name",
+        title: 'Name',
+        key: 'name',
         resizable: true,
-        width: 180
+        width: 180,
       },
       {
-        title: "Age",
-        key: "age",
+        title: 'Age',
+        key: 'age',
         resizable: true,
         width: 140,
         render: (h, { row, column, index }) => {
           const iviewProps = {
-            size: "small"
+            size: 'small',
           };
           return (
             <EditTableCell
@@ -162,34 +159,38 @@ export default {
               placeholder="请输入年龄"
               iviewProps={iviewProps}
               rules={[
-                { required: true, message: "不能为空" },
+                { required: true, message: '不能为空' },
                 {
-                  type: "integer",
+                  type: 'integer',
                   min: 1,
                   max: 150,
-                  message: "请正确输入年龄"
-                }
+                  message: '请正确输入年龄',
+                },
               ]}
               onCellChange={this.cellChange}
             />
           );
-        }
+        },
       },
       {
-        title: "Address",
-        key: "address"
-      }
+        title: 'Address',
+        key: 'address',
+      },
     ];
   },
   methods: {
     toggle(value) {
-      console.log(1, value)
+      console.log(1, value);
       this.isEditing = value;
     },
     cellChange({ value, dataKey, index }) {
-      this.$set(this.data, index, Object.assign(this.data[index], {[dataKey]: value}))
-    }
-  }
+      this.$set(
+        this.data,
+        index,
+        Object.assign(this.data[index], { [dataKey]: value }),
+      );
+    },
+  },
 };
 </script>
 
@@ -200,7 +201,7 @@ html {
 }
 
 #app {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
