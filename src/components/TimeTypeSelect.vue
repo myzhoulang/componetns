@@ -1,22 +1,18 @@
 <template>
   <div :class="['time-type-select', className]">
-    <Row :gutter="8" type="flex" align="middle">
-      <Col>时间：</Col>
+    <Row :gutter="gutter" type="flex" align="middle">
+      <Col class="label" v-if="isShowLabel">{{ label }}</Col>
       <Col>
         <Select
           v-if="showStyle === 'select'"
           v-model="type"
-          @on-change="change"
+          @on-change="timeTypeChange"
           class="select-type"
           :disabled="disableds[0]"
           :size="size"
         >
-          <template v-for="item in types">
-            <Option
-              :value="item.value"
-              :key="item.value"
-              v-if="!showTypeValues || showTypeValues.includes(item.value)"
-            >
+          <template v-for="item in timeTypes">
+            <Option :value="item.value" :key="item.value">
               {{ item.label }}
             </Option>
           </template>
@@ -26,36 +22,55 @@
           v-else
           v-model="type"
           type="button"
-          @on-change="change"
+          @on-change="timeTypeChange"
           :size="size"
           :disabled="disableds[0]"
         >
-          <template v-for="item in types">
-            <Radio
-              v-if="!showTypeValues || showTypeValues.includes(item.value)"
-              :value="item.value"
-              :label="item.value"
-              :key="item.value"
-            >
+          <template v-for="item in timeTypes">
+            <Radio :label="item.value" :key="item.value">
               {{ item.label }}
             </Radio>
           </template>
         </RadioGroup>
       </Col>
-      <Col>
+      <Col class="datepicker-wrap">
         <DatePicker
+          v-if="type !== 'week'"
+          v-bind="iviewDatePickerProps"
           class="select-date"
           v-model="date"
           @on-change="change"
-          :show-week-numbers="type === 'week'"
           :type="typeMap[type]"
           :size="size"
           :disabled="disableds[1]"
-          :options="datePicker.options"
-          :valueFormat="datePicker.valueFormat"
+          :format="format[type]"
+          :options="{ disabledDate: options.disabledDate[type] }"
           placeholder="请选择日期"
-        >
-        </DatePicker>
+        />
+        <div v-else>
+          <DatePicker
+            class="select-date"
+            v-model="date"
+            v-bind="iviewDatePickerProps"
+            :show-week-numbers="true"
+            :type="typeMap[type]"
+            :size="size"
+            :disabled="disableds[1]"
+            :options="{ disabledDate: options.disabledDate[type] }"
+            :multiple="true"
+            :open="isShowDatePicker"
+            @on-ok="hideDatePicker"
+            @on-change="change"
+            placeholder="请选择日期"
+          />
+          <input
+            ref="showWeekText"
+            @focus="showDatePicker"
+            @blur="hideDatePicker"
+            class="week-date"
+            :value="date | weekFormart"
+          />
+        </div>
       </Col>
       <Col v-show="type === 'quarter'">
         <Select
@@ -79,156 +94,407 @@
 </template>
 
 <script>
+import moment from 'moment';
 
 export default {
-  name: "TimeTypeSelect",
+  name: 'TimeTypeSelect',
+  filters: {
+    weekFormart(value) {
+      const d = moment(value[0]);
+      return `${`${d.year()} - ${d.week()}`}th`;
+    },
+  },
   props: {
+    // iview 中的 datePicker Props
+    iviewDatePickerProps: {
+      type: Object,
+      default: () => ({}),
+    },
+
+    // 展示格式化日期
+    format: {
+      type: Object,
+      default() {
+        return {
+          date: 'yyyy/MM/DD',
+          month: 'yyyy/MM',
+          daterange: 'yyyy/MM/dd',
+          quarter: 'yyyy',
+          week: 'yyyy/MM/DD',
+          year: 'yyyy',
+        };
+      },
+    },
+
+    // label 文案
+    label: {
+      type: String,
+      default: '时间:',
+    },
+
+    // 是否显示 日期选择器的 label
+    isShowLabel: {
+      type: Boolean,
+      default: true,
+    },
+
+    // 时间选择器禁止选择的时间
+    disabledDate: {
+      type: [Object, Boolean],
+    },
+
     // 设置内部表单控件是否可以手动改动
     // 默认是都可以手动选择
     disableds: {
       type: Array,
       default() {
         return [false, false, false];
-      }
+      },
     },
+
     // 显示的风格是什么样的
     // 可选值 有 'select' 和 'radioGroup'
     showStyle: {
-      type: String
+      type: String,
     },
+
     // size 对应 iview 中的size
     // 值有： small,default,large
     size: {
       type: String,
-      default: "default"
+      default: 'default',
     },
+
     // 组件包裹层的 class
     className: {
       type: String,
-      default: ""
+      default: '',
     },
+
     // 对应 iview 中的 Row 组件中的 justify
     // 控制组件中的表单控件水平摆放位置
     // 可选值有 start、end、center、space-around、space-between
     justify: {
       type: String,
-      default: "start"
+      default: 'start',
     },
+
     // 对应 iview 中的 Row 组件中的 gutter
     // 控制组件中的表单控件之间的间距
     gutter: {
       type: Number,
-      default: 8
+      default: 8,
     },
+
     // 对应 iview 中时间控件的 options 选项
     datePicker: {
-      type: Object
+      type: Object,
+      default() {
+        return {};
+      },
     },
+
     // 时间类型的选项
     types: {
+      type: Array,
       default() {
         return [
           {
-            value: "month",
-            label: "月度考核"
+            value: 'date',
+            label: '按天',
           },
           {
-            value: "quarter",
-            label: "季度考核"
+            value: 'week',
+            label: '按周',
           },
           {
-            value: "year",
-            label: "年度考核"
-          }
+            value: 'month',
+            label: '按月',
+          },
+          {
+            value: 'daterange',
+            label: '按区间',
+          },
+          {
+            value: 'quarter',
+            label: '按季度',
+          },
+          {
+            value: 'year',
+            label: '按年',
+          },
         ];
-      }
+      },
     },
+
     // 季度类型的选项
     quarters: {
+      type: Array,
       default() {
         return [
           {
             value: 1,
-            label: "第一季度"
+            label: '第一季度',
           },
           {
             value: 2,
-            label: "第二季度"
+            label: '第二季度',
           },
           {
             value: 3,
-            label: "第三季度"
+            label: '第三季度',
           },
           {
             value: 4,
-            label: "第四季度"
-          }
+            label: '第四季度',
+          },
         ];
-      }
+      },
     },
 
     // 需要显示那些时间类型
-    showTypeValues: {
-      type: Array
+    include: {
+      type: Array,
+    },
+
+    // 排除哪些时间类型 优先级高于 include
+    exclude: {
+      type: Array,
     },
 
     // 组件的 v-model
+    // 默认是当前时间 yyyy/MM/dd
     value: {
-      required: true,
+      type: Object,
       default() {
         return {
-          type: "month",
-          date: null,
-          quarter: ""
+          type: 'month',
+          date: moment(new Date().setDate(1)).format('yyyy/MM/DD'),
+          quarter: '',
         };
-      }
-    }
-  },
-  watch: {
-    value(value = {}) {
-      const { type, date, quarter } = value;
-      this.type = type || "month";
-      this.date = date || null;
-      this.quarter = quarter || "";
-    }
-  },
-  created() {
-    console.log(this.disabledDate);
-  },
-  methods: {
-    change() {
-      const { type, date, quarter } = this;
-      // TODO: 在向父级传送数据的时候 通过传入的格式化规则对日期进行格式化
-      // TODO: 当时间类型选择改变，是否需要清除后面的日期和季度的值
-      // 如： Date对象 => 'yyyy-mm-dd'
-      this.$emit("change", {
-        type,
-        date,
-        quarter
-      });
-    }
+      },
+    },
   },
   data() {
     const { type, date, quarter } = this.value;
     return {
+      options: {
+        disabledDate: {},
+      },
+      timeTypes: [],
       typeMap: {
-        date: "date",
-        month: "month",
-        year: "year",
-        week: "date",
-        quarter: "year"
+        date: 'date',
+        month: 'month',
+        year: 'year',
+        week: 'date',
+        daterange: 'daterange',
+        quarter: 'year',
       },
       type,
       date,
-      quarter
+      quarter,
+      isShowDatePicker: false,
     };
-  }
+  },
+  watch: {
+    value: {
+      handler(value = {}) {
+        console.log('watch', value);
+        const { type, date, quarter } = value;
+        this.type = type || 'month';
+        this.date = date || null;
+        this.quarter = quarter || '';
+      },
+      deep: true,
+    },
+  },
+  created() {
+    const disabledType = typeof this.disabledDate;
+    // 启用控制时间选择时，默认设置
+    const defaultDisabledDate = {
+      date(date) {
+        return date.getTime() > new Date().getTime();
+      },
+      week(date) {
+        return (
+          date.valueOf() >
+          moment(new Date())
+            .day(6)
+            .valueOf()
+        );
+      },
+      month(date) {
+        const oDate = new Date();
+        return (
+          date.getMonth() > oDate.getMonth() ||
+          date.getFullYear() > oDate.getFullYear()
+        );
+      },
+      daterange(date) {
+        return date.getTime() > new Date().getTime();
+      },
+      quarter(date) {
+        return date.getFullYear() > new Date().getFullYear();
+      },
+      year(date) {
+        return date.getFullYear() > new Date().getFullYear();
+      },
+    };
+    // 如果传入这个props 判断是否是一个对象还是一个布尔值
+    // 如果是布尔值就使用 默认的控制时间规则
+    // 如果是一个对象就使用传入的控制时间规则
+    if (typeof disabledType !== 'undefined') {
+      this.options.disabledDate =
+        typeof disabledType === 'object'
+          ? this.disabledDate
+          : defaultDisabledDate;
+    }
+
+    // 筛选出需要显示的时间类型
+    let timeTypes = this.types;
+    if (this.include) {
+      timeTypes = this.include.map(item =>
+        this.types.find(it => it.value === item),
+      );
+    }
+    if (this.exclude) {
+      timeTypes = this.types.filter(item =>
+        this.exclude.find(it => it !== item.value),
+      );
+    }
+    this.timeTypes = timeTypes;
+  },
+  methods: {
+    // 在选择周的模式下点击datepicker 中的确定
+    hideDatePicker() {
+      this.isShowDatePicker = false;
+    },
+
+    // 在选择周的模式下自定义输入框获取焦点自动弹出时间选择器
+    showDatePicker() {
+      this.isShowDatePicker = true;
+    },
+
+    // 获取当前日期这一周的日期
+    getWeekDays(date) {
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        days.push(
+          moment(date)
+            .day(i)
+            .format(this.format['week']),
+        );
+      }
+      return days;
+    },
+
+    // 获取一个时间区间
+    getDateRange() {
+      const oDate = moment(new Date());
+      return [oDate.format('yyyy/MM/01'), oDate.format('yyyy/MM/DD')];
+    },
+
+    // 时间选择器类型改变
+    timeTypeChange() {
+      const { type } = this;
+      let date2 = new Date();
+      if (type === 'week') {
+        date2 = this.getWeekDays(Date.now());
+      } else if (type === 'daterange') {
+        date2 = this.getDateRange();
+      }
+      this.$emit('input', {
+        type,
+        date: date2,
+        quarter: type === 'quarter' ? 1 : '',
+      });
+
+      this.$emit('typeChange', {
+        type,
+        date: date2,
+        quarter: type === 'quarter' ? 1 : '',
+      });
+    },
+
+    // 选择日期后的回调
+    change() {
+      const { type, date, quarter } = this;
+      let date2 = date;
+
+      // 对类型为周的做特殊处理
+      // 获取以选择的时间为基础计算当前一周的 年/月/日
+      // 并通过失去光标来关闭日期选择器
+      if (type === 'week') {
+        date2 = this.getWeekDays((date && date.pop()) || Date.now());
+        this.$refs.showWeekText.blur();
+      }
+      this.isShowDatePicker = false;
+      this.$emit('input', {
+        type,
+        date: date2,
+        quarter,
+      });
+      this.$emit('change', {
+        type,
+        date: date2,
+        quarter,
+      });
+    },
+  },
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .select-type,
 .select-quarter {
   width: 120px;
+}
+// 设置data-picker宽度至少为200px 以便于 daterange 时候可以正常显示出选择的时间
+.select-date {
+  min-width: 200px;
+}
+.time-type-select {
+  ::v-deep .ivu-radio-group-button .ivu-radio-wrapper-checked {
+    background-color: rgba(45, 140, 240, 1);
+    color: #fff;
+
+    &:hover {
+      color: #fff;
+      border-color: #57a3f3;
+    }
+  }
+
+  ::v-deep .ivu-date-picker-cells-focused em {
+    box-shadow: none;
+  }
+}
+
+.datepicker-wrap {
+  position: relative;
+
+  ::v-deep .ivu-picker-confirm {
+    display: none;
+  }
+
+  .week-date {
+    position: absolute;
+    padding: 4px 16px 4px 7px;
+    left: 5px;
+    right: 0;
+    top: 1px;
+    bottom: 1px;
+    background: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: 4px;
+    border: none;
+    color: #515a6e;
+
+    &:focus {
+      box-shadow: none;
+      outline: none;
+    }
+  }
 }
 </style>
