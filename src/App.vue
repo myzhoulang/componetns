@@ -1,23 +1,64 @@
 <template>
   <div id="app">
-    {{ data }}
     <PageContent>
-      <Table :columns="columns" @toggle="toggle"></Table>
+      <Row class="search-params" :gutter="8" type="flex" align="middle">
+        <Col>
+          <TimeTypeSelect
+            v-model="value"
+            :types="types"
+            :show-type-values="['date', 'week', 'month', 'quarter']"
+            :datePicker="{
+              options: datePickerOptions,
+              valueFormat: 'yyyy-MM-dd',
+            }"
+            :ivew-row-props="{ gutter: 8, type: 'flex', align: 'middle' }"
+            @change="timeTypeChange"
+            class="select-time"
+          />
+        </Col>
+        <Col class="action">
+          <!--          <Button type="primary" @click="search">查询</Button>-->
+          <Button type="primary" @click="toggleEditing" :loading="updating">
+            {{ isEditing ? '保存指标' : '编辑指标' }}
+          </Button>
+          <Button type="warning" @click="cancel">取消编辑</Button>
+        </Col>
+        <Col v-show="isEditing" :span="24" class="text-danger">
+          当前表格处于编辑状态，编辑完成后，点击“保存指标”按钮，提交编辑的数据；（请逐页编辑保存）
+        </Col>
+      </Row>
+      <Table
+        @rowSave="onRowSave"
+        ref="editTable"
+        :isEditing="isEditing"
+        :edit-manner="editManner"
+      />
     </PageContent>
   </div>
 </template>
 
 <script>
-import EditTableCell from '@/components/EditTableCell';
-import Table from './components/EditTable';
+import Table from './components/EditTable/EditTable';
 import PageContent from './components/PageContent';
+import TimeTypeSelect from '@/components/TimeTypeSelect';
 
 export default {
   name: 'App',
   data() {
     return {
-      data: [],
-      columns: [],
+      updating: false,
+      value: {
+        type: 'month',
+        date: null,
+        quarter: '',
+      },
+      datePickerOptions: {
+        disabledDate(date) {
+          const disabledMonth = date.getMonth();
+          return disabledMonth >= 11;
+        },
+      },
+      editManner: 'row',
       types: [
         {
           value: 'date',
@@ -40,155 +81,46 @@ export default {
           label: '按年',
         },
       ],
-      value: {
-        type: 'month',
-        date: null,
-        quarter: '',
-      },
-      datePickerOptions: {
-        disabledDate(date) {
-          const disabledMonth = date.getMonth();
-          return disabledMonth >= 11;
-        },
-      },
       isEditing: false,
     };
   },
   components: {
     Table,
     PageContent,
+    TimeTypeSelect,
   },
 
-  created() {
-    this.data = [
-      {
-        name: 'John Brown',
-        age: 18,
-        address: 'New York No. 1 Lake Park',
-        date: '2016-07-03',
-        email: 'JohnBrown@gmail.com',
-      },
-      {
-        name: 'Jim Green',
-        age: 24,
-        address: 'London No. 1 Lake Park',
-        date: '2016-10-01',
-        email: 'JimGreen@gmail.com',
-      },
-      {
-        name: 'Joe Black',
-        age: 30,
-        address: 'Sydney No. 1 Lake Park',
-        date: '2016-10-02',
-        email: 'JoeBlack@gmail.com',
-      },
-      {
-        name: 'Jon Snow',
-        age: 26,
-        address: 'Ottawa No. 2 Lake Park',
-        date: '2016-10-04',
-        email: 'JonSnow@gmail.com',
-      },
-    ];
-    this.columns = [
-      {
-        title: 'Date',
-        key: 'date',
-        resizable: true,
-        tooltip: true,
-        render: (h, { row, column, index }) => {
-          return (
-            <EditTableCell
-              dataKey={column.key}
-              text={row[column.key]}
-              index={index}
-              isEditing={this.isEditing}
-              placeholder="请输入一个日期"
-              rules={[{ required: true, message: '这是一个必填的字段' }]}
-              onCellChange={this.cellChange}
-            />
-          );
-        },
-        width: 160,
-      },
-      {
-        title: 'Email',
-        key: 'email',
-        resizable: true,
-        tooltip: true,
-        render: (h, { row, column, index }) => {
-          return (
-            <EditTableCell
-              dataKey={column.key}
-              text={row[column.key]}
-              index={index}
-              isEditing={this.isEditing}
-              placeholder="请输入一个邮箱"
-              rules={[
-                { required: true, message: '这是一个必填的字段' },
-                { type: 'email', message: '该字段的值是一个邮箱' },
-              ]}
-              onCellChange={this.cellChange}
-            />
-          );
-        },
-        width: 220,
-      },
-      {
-        title: 'Name',
-        key: 'name',
-        resizable: true,
-        width: 180,
-      },
-      {
-        title: 'Age',
-        key: 'age',
-        resizable: true,
-        width: 140,
-        render: (h, { row, column, index }) => {
-          const iviewProps = {
-            size: 'small',
-          };
-          return (
-            <EditTableCell
-              dataKey={column.key}
-              text={row[column.key]}
-              index={index}
-              dataType="number"
-              isEditing={this.isEditing}
-              placeholder="请输入年龄"
-              iviewProps={iviewProps}
-              rules={[
-                { required: true, message: '不能为空' },
-                {
-                  type: 'integer',
-                  min: 1,
-                  max: 150,
-                  message: '请正确输入年龄',
-                },
-              ]}
-              onCellChange={this.cellChange}
-            />
-          );
-        },
-      },
-      {
-        title: 'Address',
-        key: 'address',
-      },
-    ];
-  },
   methods: {
-    toggle(value) {
-      console.log(1, value);
-      this.isEditing = value;
+    cancel() {
+      this.$refs.editTable.tableCancel();
+      this.isEditing = false;
     },
-    cellChange({ value, dataKey, index }) {
-      this.$set(
-        this.data,
-        index,
-        Object.assign(this.data[index], { [dataKey]: value }),
-      );
+    onRowSave(row) {
+      console.log(row);
+    },
+    toggleEditing() {
+      if (this.isEditing) {
+        this.updating = true;
+        this.$refs.editTable
+          .tableSave()
+          .then(() => {
+            this.isEditing = false;
+            this.updating = false;
+          })
+          .catch(() => {
+            this.$Message.error('数据校验失败');
+          })
+          .finally(() => {
+            this.updating = false;
+          });
+      } else {
+        this.isEditing = !this.isEditing;
+      }
+    },
+    // 时间类型选择器选择类型改变
+    timeTypeChange(value) {
+      console.log('parent-value', value);
+      Object.assign(this.value, value);
     },
   },
 };
@@ -209,11 +141,16 @@ html {
   height: 100%;
 }
 .select-time .ivu-radio-group-button .ivu-radio-wrapper-checked {
+  padding-bottom: 20px;
   background-color: rgba(45, 140, 240, 1);
   color: #fff;
   &:hover {
     color: #fff;
     border-color: #57a3f3;
   }
+}
+
+.search-params {
+  padding-bottom: 20px;
 }
 </style>

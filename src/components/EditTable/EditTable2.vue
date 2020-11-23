@@ -1,5 +1,6 @@
 <template>
   <div class="wrap">
+    {{ data }}
     <Row class="search-params" :gutter="8" type="flex" align="middle">
       <Col>
         <TimeTypeSelect
@@ -26,7 +27,13 @@
         当前表格处于编辑状态，编辑完成后，点击“保存指标”按钮，提交编辑的数据；（请逐页编辑保存）
       </Col>
     </Row>
-    <Table :columns="columns" :data="data" border class="table"></Table>
+    <Table
+      :height="600"
+      :columns="columns"
+      :data="data"
+      border
+      class="table"
+    ></Table>
     <div class="page">
       <Page
         @on-change="changePage"
@@ -44,6 +51,9 @@
 
 <script>
 import TimeTypeSelect from '@/components/TimeTypeSelect/index';
+import createColums from '@/utils/createColums';
+import { columns } from '@/columns';
+import { data } from '../../mock/app';
 
 /**
  * 可编辑的表格.
@@ -52,42 +62,16 @@ import TimeTypeSelect from '@/components/TimeTypeSelect/index';
 export default {
   name: 'EditTable',
   data() {
+    this.cacheData = data.map(item => ({ ...item }));
     return {
+      current: {},
+      editManner: 'table',
+      data: [data[0]],
       params: {
         current: 1,
         pageSize: 20,
       },
       isEditing: false,
-      data: [
-        {
-          name: 'John Brown',
-          age: 18,
-          address: 'New York No. 1 Lake Park',
-          date: '2016-07-03',
-          email: 'JohnBrown@gmail.com',
-        },
-        {
-          name: 'Jim Green',
-          age: 24,
-          address: 'London No. 1 Lake Park',
-          date: '2016-10-01',
-          email: 'JimGreen@gmail.com',
-        },
-        {
-          name: 'Joe Black',
-          age: 30,
-          address: 'Sydney No. 1 Lake Park',
-          date: '2016-10-02',
-          email: 'JoeBlack@gmail.com',
-        },
-        {
-          name: 'Jon Snow',
-          age: 26,
-          address: 'Ottawa No. 2 Lake Park',
-          date: '2016-10-04',
-          email: 'JonSnow@gmail.com',
-        },
-      ],
       types: [
         {
           value: 'date',
@@ -123,31 +107,15 @@ export default {
       },
     };
   },
-  props: {
-    columns: {
-      type: Array,
-      default: () => [],
-    },
-    export: {
-      type: Object,
-      default() {
-        return {
-          url: '',
-          name: '',
-          params: {},
-          type: '',
-          disabled: false,
-        };
-      },
-    },
-  },
+  props: {},
   methods: {
     // 切换表格编辑状态，通知父组件
     // 父组件中的编辑单元格中的表单控件将切换显示隐藏
     toggleEditing() {
+      console.log(this.data);
       this.isEditing = !this.isEditing;
-      this.$emit('toggle', this.isEditing);
     },
+
     // 获取最新的请求api参数
     getLastParams() {
       const { type, date, quarter } = this.value;
@@ -179,9 +147,31 @@ export default {
     search() {
       this.$emit('refresh', this.getLastParams());
     },
+    cellChange({ value, dataKey, index }) {
+      this.$set(
+        this.data,
+        index,
+        Object.assign(this.data[index], { [dataKey]: value }),
+      );
+    },
+    edit({ row, index }) {
+      this.current = row;
+      this.$set(this.data[index], 'isEditing', true);
+    },
+    save({ row, index }) {
+      this.$emit('rowSave', row);
+      this.$set(this.data[index], 'isEditing', false);
+    },
+    cancel({ index }) {
+      this.$set(this.data[index], 'isEditing', false);
+      this.$set(this.data, index, this.current);
+    },
   },
   components: {
     TimeTypeSelect,
+  },
+  created() {
+    this.columns = createColums.bind(this)(columns);
   },
 };
 </script>

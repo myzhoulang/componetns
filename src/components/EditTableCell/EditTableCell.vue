@@ -7,14 +7,11 @@
       type="flex"
       v-show="!isShowInput"
     >
-      <Col :span="typeof isEditing === 'undefined' ? 20 : 24">
+      <Col :span="editManner === 'cell' ? 19 : 24">
         <div class="text">{{ text || '-' }}</div>
       </Col>
-      <Col
-        :span="4"
-        v-show="isShowEditIcon"
-        v-if="typeof isEditing === 'undefined'"
-      >
+
+      <Col :span="5" v-show="isShowEditIcon" v-if="editManner === 'cell'">
         <Icon @click="showInput" class="icon" type="md-brush" />
       </Col>
     </Row>
@@ -26,25 +23,74 @@
       v-show="isShowInput"
     >
       <Col
-        :span="typeof isEditing === 'undefined' ? 20 : 24"
+        :span="editManner === 'cell' ? 19 : 24"
         :class="{ 'ivu-form-item-error': invalid }"
       >
-        <InputNumber
-          ref="input-control"
-          v-model="value"
-          v-if="dataType === 'number'"
-          @on-change="change"
-          v-bind="iviewProps"
-        />
-        <Input
-          v-else
-          v-model="value"
-          ref="input-control"
-          @on-change="change"
-          v-bind="iviewProps"
-        />
+        <template v-if="dataType === 'number'">
+          <InputNumber
+            :size="size"
+            :transfer="true"
+            v-model="value"
+            v-if="dataType === 'number'"
+            v-bind="iviewProps"
+            @on-change="change"
+            ref="input-control"
+          />
+        </template>
+
+        <template v-if="dataType === 'select'">
+          <Select
+            :placeholder="placeholder"
+            :size="size"
+            :transfer="true"
+            v-model="value"
+          >
+            <Option
+              v-for="item in options"
+              :value="item.value"
+              :key="item.value"
+            >
+              {{ item.label }}
+            </Option>
+          </Select>
+        </template>
+
+        <template v-if="dataType === 'checkbox'">
+          <RadioGroup v-model="value">
+            <Radio
+              :label="value"
+              v-for="{ label, value } in options"
+              :key="value"
+            >
+              <span>{{ label }}</span>
+            </Radio>
+          </RadioGroup>
+        </template>
+
+        <template v-if="!dataType || dataType === 'string'">
+          <Input
+            :placeholder="placeholder"
+            :size="size"
+            v-model="value"
+            v-bind="iviewProps"
+            @on-change="change"
+            ref="input-control"
+          />
+        </template>
+
+        <template v-if="dataType === 'date'">
+          <DatePicker
+            :transfer="true"
+            :size="size"
+            :type="date.type"
+            :placeholder="placeholder"
+            @on-change="change"
+            v-bind="date.iviewProps"
+            v-model="value"
+          ></DatePicker>
+        </template>
       </Col>
-      <Col aria-colspan="4" v-if="typeof isEditing === 'undefined'">
+      <Col :span="5" v-if="editManner === 'cell'">
         <Icon @click="saveValue" class="icon" type="md-checkmark" />
       </Col>
     </Row>
@@ -53,12 +99,17 @@
 
 <script>
 import Schema from 'async-validator';
+import dayjs from 'dayjs';
 
 let timer = null;
 let timer2 = null;
 export default {
   name: 'EditTableCell',
   props: {
+    editManner: {
+      type: String,
+      default: 'cell',
+    },
     // 数据的可以
     dataKey: {
       type: String,
@@ -76,6 +127,12 @@ export default {
     dataType: {
       type: String,
       default: 'string',
+    },
+    // 当数据类型是日期类型
+    // 配置日期控件显示
+    date: {
+      type: String,
+      default: 'date',
     },
     // 当前数据可修改的规则
     // 验证规则参考 https://github.com/yiminghe/async-validator
@@ -100,6 +157,16 @@ export default {
       type: Boolean,
       default: false,
     },
+    // 是否是自己组件内部控制交互
+    // 不和其他组件关联
+    isSingle: {
+      type: Boolean,
+      default: true,
+    },
+    options: {
+      type: Array,
+      default: () => [],
+    },
   },
   watch: {
     isEditing(value) {
@@ -108,6 +175,7 @@ export default {
   },
   data() {
     return {
+      invalidMessage: [],
       value: this.text,
       isShowEditIcon: false,
       isShowInput: false,
@@ -121,22 +189,26 @@ export default {
       [this.dataKey]: this.rules,
     };
     this.validator = new Schema(descriptor);
-
     this.isShowInput = this.isEditing;
   },
   methods: {
     // 鼠标移入单元格显示编辑icon
     showEditIcon() {
-      // 做一下简单的防抖处理， 防抖处理函数需要封装到 util
-      timer = setTimeout(() => {
-        this.isShowEditIcon = true;
-      }, 80);
+      // 只有在 cell 形式下才会有这个操作
+      if (this.editManner === 'cell') {
+        // 做一下简单的防抖处理， 防抖处理函数需要封装到 util
+        timer = setTimeout(() => {
+          this.isShowEditIcon = true;
+        }, 80);
+      }
     },
 
     // 鼠标移除单元格隐藏编辑icon
     hideEditIcon() {
-      clearTimeout(timer);
-      this.isShowEditIcon = false;
+      if (this.editManner === 'cell') {
+        clearTimeout(timer);
+        this.isShowEditIcon = false;
+      }
     },
 
     // 验证数据合法性
@@ -184,10 +256,20 @@ export default {
       clearTimeout(timer2);
       timer2 = setTimeout(() => {
         this.validate().then(errors => {
-          if (!errors) {
-            const { value, dataKey, index } = this;
-            this.$emit('cellChange', { value, dataKey, index });
+          let invalid = false;
+          const { value, dataKey, index } = this;
+          let v = value;
+          // 对日期格式进行处理
+          if (value instanceof Date) {
+            v = dayjs(value).format('YYYY-MM-DD');
           }
+          if (errors) {
+            this.invalidMessage = errors.map(item => item.message);
+            invalid = true;
+          } else {
+            this.invalidMessage = [];
+          }
+          this.$emit('cellChange', { value: v, dataKey, invalid, index });
         });
       }, 100);
     },
