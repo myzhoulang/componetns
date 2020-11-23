@@ -20,12 +20,13 @@ const createColums = function(colums = []) {
         col.render = (h, { row, column, index }) => {
           const newRules = [];
           const { editManner = 'cell', isEditing = false } = this;
-          console.log(editManner);
           const isEditings = {
             cell: false,
             row: row.isEditing,
             table: isEditing,
           };
+          // 重新生成规则
+          // 主要解决一些字段之间依赖的规则校验
           for (const rule of rules) {
             if (rule.validator) {
               newRules.push(rule.validator.bind(row));

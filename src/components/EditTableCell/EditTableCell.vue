@@ -106,8 +106,12 @@ let timer2 = null;
 export default {
   name: 'EditTableCell',
   props: {
+    // 编辑方式
     editManner: {
       type: String,
+      validate(value) {
+        return ['table', 'row', 'cell'].includes(value);
+      },
       default: 'cell',
     },
     // 数据的可以
@@ -127,12 +131,25 @@ export default {
     dataType: {
       type: String,
       default: 'string',
+      validate(value) {
+        return [
+          'string',
+          'number',
+          'select',
+          'radio',
+          'checkbox',
+          'date',
+        ].includes(value);
+      },
     },
     // 当数据类型是日期类型
     // 配置日期控件显示
     date: {
       type: String,
       default: 'date',
+      validate(value) {
+        return ['date', 'month', 'year'].includes(value);
+      },
     },
     // 当前数据可修改的规则
     // 验证规则参考 https://github.com/yiminghe/async-validator
@@ -147,6 +164,9 @@ export default {
     size: {
       type: String,
       default: 'default',
+      validate(value) {
+        return ['small', 'default', 'large'].includes(value);
+      },
     },
     // iview 上的属性透传到 iview 表单控件
     iviewProps: {
@@ -157,12 +177,8 @@ export default {
       type: Boolean,
       default: false,
     },
-    // 是否是自己组件内部控制交互
-    // 不和其他组件关联
-    isSingle: {
-      type: Boolean,
-      default: true,
-    },
+    // select 或 radio 的 options 选项
+    // [{label: 'label', value: value}]
     options: {
       type: Array,
       default: () => [],
@@ -230,7 +246,7 @@ export default {
     saveValue($event) {
       // 校验数据是否是合规的
       const { dataKey, value, index } = this;
-      this.validate().then(errors => {
+      return this.validate().then(errors => {
         if (!errors) {
           this.isShowInput = false;
           this.$emit('cellChange', { dataKey, value, index }, $event);

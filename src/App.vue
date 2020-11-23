@@ -9,7 +9,7 @@
             :show-type-values="['date', 'week', 'month', 'quarter']"
             :datePicker="{
               options: datePickerOptions,
-              valueFormat: 'yyyy-MM-dd',
+              valueFormat: 'YYYY-MM-dd',
             }"
             :ivew-row-props="{ gutter: 8, type: 'flex', align: 'middle' }"
             @change="timeTypeChange"
@@ -18,7 +18,7 @@
         </Col>
         <Col class="action">
           <!--          <Button type="primary" @click="search">查询</Button>-->
-          <Button type="primary" @click="toggleEditing" :loading="updating">
+          <Button type="primary" @click="toggleEditing" :loading="updating" style="margin-right: 8px">
             {{ isEditing ? '保存指标' : '编辑指标' }}
           </Button>
           <Button type="warning" @click="cancel">取消编辑</Button>
