@@ -16,6 +16,7 @@ const Space = {
     },
     direction: {
       type: String,
+      default: 'horizontal',
       validate(value) {
         return ['horizontal', 'vertical'].includes(value);
       },
@@ -23,13 +24,13 @@ const Space = {
     align: {
       type: String,
       validate(value) {
-        return ['start', 'end', 'center', 'baselint'].includes(value);
+        return ['start', 'end', 'center', 'baseline'].includes(value);
       },
     },
   },
   render(h, content) {
     const { children } = content;
-    const { size, direction } = content.props;
+    const { size, direction, align } = content.props;
 
     const len = children.length;
 
@@ -37,25 +38,39 @@ const Space = {
       return null;
     }
     const itemClassName = 'space-item';
-
+    // 水平方向 子元素默认居中对齐
+    const mergedAlign =
+      align === undefined && direction === 'horizontal' ? 'center' : align;
+    const spaceClassName = [
+      {
+        space: true,
+        [`space-${direction}`]: true,
+        [`space-align-${mergedAlign}`]: true,
+      },
+    ];
     return (
-      <div className={itemClassName}>
+      <div class={spaceClassName}>
         {children.map((child, i) => {
-          <div
-            key={i}
-            style={
-              i === len - 1
-                ? {}
-                : {
-                    [direction === 'vertical' ? 'marginBottom' : 'marginRight']:
-                      typeof size === 'string'
-                        ? `${spaceSize[size]}px`
-                        : `${size}px`,
-                  }
-            }
-          >
-            {child}
-          </div>;
+          return (
+            <div
+              class={itemClassName}
+              key={i}
+              style={
+                i === len - 1
+                  ? {}
+                  : {
+                      [direction === 'vertical'
+                        ? 'marginBottom'
+                        : 'marginRight']:
+                        typeof size === 'string'
+                          ? `${spaceSize[size]}px`
+                          : `${size}px`,
+                    }
+              }
+            >
+              {child}
+            </div>
+          );
         })}
       </div>
     );

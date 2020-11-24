@@ -81,9 +81,10 @@
           :size="size"
         >
           <Option
-            v-for="item in quarters"
+            v-for="item in mergedQuarters"
             :value="item.value"
             :key="item.value"
+            :disabled="item.disabled"
           >
             {{ item.label }}
           </Option>
@@ -95,14 +96,14 @@
 
 <script>
 import * as dayjs from 'dayjs';
+import { weekFormart } from '@/utils/filters';
+
+const dateType = ['date', 'week', 'month', 'daterange', 'quarter', 'year'];
 
 export default {
   name: 'TimeTypeSelect',
   filters: {
-    weekFormart(value) {
-      const d = dayjs(value[0]);
-      return `${d.year()} - ${d.week()}th`;
-    },
+    weekFormart,
   },
   props: {
     // iview 中的 row props
@@ -122,11 +123,11 @@ export default {
       type: Object,
       default() {
         return {
-          date: 'yyyy/MM/DD',
+          date: 'yyyy/MM/dd',
           month: 'yyyy/MM',
           daterange: 'yyyy/MM/dd',
           quarter: 'yyyy',
-          week: 'yyyy/MM/DD',
+          week: 'YYYY/MM/DD',
           year: 'yyyy',
         };
       },
@@ -149,10 +150,17 @@ export default {
       type: [Object, Boolean],
     },
 
+    // 季节下拉框禁止选择配置
+    disabledQuqrtes: {
+      type: Boolean,
+    },
     // 设置内部表单控件是否可以手动改动
     // 默认是都可以手动选择
     disableds: {
       type: Array,
+      validator(value) {
+        return value.every(item => typeof item === 'boolean');
+      },
       default() {
         return [false, false, false];
       },
@@ -161,6 +169,10 @@ export default {
     // 显示的风格是什么样的
     // 可选值 有 'select' 和 'radioGroup'
     showStyle: {
+      default: 'select',
+      validator(value) {
+        return ['select', 'radioGroup'].includes(value);
+      },
       type: String,
     },
 
@@ -169,6 +181,9 @@ export default {
     // 组件内部所有的 iview 组件的 size 将会统一使用这个
     size: {
       type: String,
+      validator(value) {
+        return ['small', 'default', 'large'].includes(value);
+      },
       default: 'default',
     },
 
@@ -183,6 +198,9 @@ export default {
     // 时间类型的选项
     types: {
       type: Array,
+      validator(value) {
+        return value.every(({ value }) => dateType.includes(value));
+      },
       default() {
         return [
           {
@@ -216,6 +234,9 @@ export default {
     // 季度类型的选项
     quarters: {
       type: Array,
+      validator(value) {
+        return value.every(({ value }) => [1, 2, 3, 4].includes(value));
+      },
       default() {
         return [
           {
@@ -241,11 +262,17 @@ export default {
     // 需要显示那些时间类型
     include: {
       type: Array,
+      validator(value) {
+        return dateType.includes(value);
+      },
     },
 
     // 排除哪些时间类型 优先级高于 include
     exclude: {
       type: Array,
+      validator(value) {
+        return dateType.includes(value);
+      },
     },
 
     // 组件的 v-model
@@ -255,7 +282,7 @@ export default {
       default() {
         return {
           type: 'month',
-          date: dayjs(new Date().setDate(1)).format('yyyy/MM/DD'),
+          date: dayjs(new Date().setDate(1)).format('YYYY/MM/DD'),
           quarter: '',
         };
       },
@@ -276,6 +303,7 @@ export default {
         daterange: 'daterange',
         quarter: 'year',
       },
+      mergedQuarters: [],
       type,
       date,
       quarter,
@@ -289,12 +317,21 @@ export default {
         this.type = type || 'month';
         this.date = date || null;
         this.quarter = quarter || '';
+        // 监视时间选择器的 value 变化
+        // 当切换到季度或者在季度下改变年份
+        // 将会重新计算季度
+        if (type === 'quarter') {
+          this.createQuqrtes();
+        }
       },
       deep: true,
     },
   },
   created() {
     const disabledType = typeof this.disabledDate;
+
+    this.createQuqrtes();
+
     // 启用控制时间选择时，默认设置
     const defaultDisabledDate = {
       date(date) {
@@ -350,6 +387,28 @@ export default {
     this.timeTypes = timeTypes;
   },
   methods: {
+    createQuqrtes() {
+      // 判断是否需要设置禁用某些季度的选择
+      if (!this.disabledQuqrtes) {
+        this.mergedQuarters = this.quarters;
+        return [];
+      }
+      // 对季节做选择
+      const oToday = dayjs(new Date());
+      const oTodayForYear = oToday.year();
+      const oTodayForMonth = oToday.month();
+
+      const oDate = dayjs(this.date || oToday);
+      const oYear = oDate.year();
+      const copyQuartes = this.quarters.map(item => ({ ...item }));
+      this.mergedQuarters = copyQuartes.map(item => {
+        if (oYear >= oTodayForYear) {
+          item.disabled = item.value > oTodayForMonth / 3;
+        }
+        return item;
+      });
+      return this.mergedQuarters;
+    },
     // 在选择周的模式下点击datepicker 中的确定
     hideDatePicker() {
       this.isShowDatePicker = false;
@@ -376,7 +435,7 @@ export default {
     // 获取一个时间区间
     getDateRange() {
       const oDate = dayjs(new Date());
-      return [oDate.format('yyyy/MM/01'), oDate.format('yyyy/MM/DD')];
+      return [oDate.format('YYYY/MM/01'), oDate.format('YYYY/MM/DD')];
     },
 
     // 时间选择器类型改变
@@ -406,7 +465,10 @@ export default {
       if (type === 'week') {
         date2 = this.getWeekDays((date && date.pop()) || Date.now());
         this.$refs.showWeekText.blur();
+      } else if (type === 'quarter') {
+        this.createQuqrtes();
       }
+
       this.isShowDatePicker = false;
       this.$emit('input', {
         type,

@@ -45,37 +45,20 @@ export default {
         current: 1,
         pageSize: 20,
       },
-      types: [
-        {
-          value: 'date',
-          label: '按天',
-        },
-        {
-          value: 'week',
-          label: '按周',
-        },
-        {
-          value: 'month',
-          label: '按月',
-        },
-        {
-          value: 'quarter',
-          label: '按季度',
-        },
-        {
-          value: 'year',
-          label: '按年',
-        },
-      ],
     };
   },
   props: {
+    // 是否处于编辑状态
     isEditing: {
       type: Boolean,
       default: false,
     },
+    // 表格编辑形式 cell/row/table
     editManner: {
       type: String,
+      validate(value) {
+        return ['cell', 'row', 'table'].includes(value);
+      },
       default: 'cell',
     },
   },
@@ -105,6 +88,8 @@ export default {
         });
     },
 
+    // 编辑形式在 table 下的取消
+    // 在父级组件中使用 $refs 的形式调用子组件中的方法
     tableCancel() {
       const data = this.cacheData.map(item => ({ ...item }));
       this.data = data;
@@ -144,12 +129,14 @@ export default {
         Object.assign(this.data[index], { [dataKey]: value, invalid }),
       );
     },
-    // 当前的编辑
+    // 当前行的编辑
+    // 编辑形式(editManner: 'row')的时候用到
     rowEdit({ row, index }) {
       this.current = row;
       this.$set(this.data[index], 'isEditing', true);
     },
     // 当前行的保存
+    // 编辑形式(editManner: 'row')的时候用到
     rowSave({ row, index }) {
       this.validate().then(() => {
         this.$emit('rowSave', row);
@@ -164,6 +151,7 @@ export default {
       });
     },
     // 当前行的取消
+    // 编辑形式(editManner: 'row')的时候用到
     rowCancel({ index }) {
       this.$set(this.data[index], 'isEditing', false);
       try {

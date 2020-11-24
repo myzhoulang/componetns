@@ -117,10 +117,8 @@ export const columns = [
     // eslint-disable-next-line no-unused-vars
     render(h, params) {
       const { row } = params;
-      console.log(row);
       return (
         <div>
-          {row.isEditing ? 'true' : 'false'}
           {row.isEditing ? (
             <div>
               <Button
