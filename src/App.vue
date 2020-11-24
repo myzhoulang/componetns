@@ -1,32 +1,50 @@
 <template>
   <div id="app">
     <PageContent>
-      <Row class="search-params" :gutter="8" type="flex" align="middle">
-        <Col>
-          <TimeTypeSelect
-            v-model="value"
-            :types="types"
-            :show-type-values="['date', 'week', 'month', 'quarter']"
-            :datePicker="{
-              options: datePickerOptions,
-              valueFormat: 'yyyy-MM-dd',
-            }"
-            :ivew-row-props="{ gutter: 8, type: 'flex', align: 'middle' }"
-            @change="timeTypeChange"
-            class="select-time"
-          />
-        </Col>
-        <Col class="action">
-          <!--          <Button type="primary" @click="search">查询</Button>-->
-          <Button type="primary" @click="toggleEditing" :loading="updating">
-            {{ isEditing ? '保存指标' : '编辑指标' }}
-          </Button>
-          <Button type="warning" @click="cancel">取消编辑</Button>
-        </Col>
-        <Col v-show="isEditing" :span="24" class="text-danger">
-          当前表格处于编辑状态，编辑完成后，点击“保存指标”按钮，提交编辑的数据；（请逐页编辑保存）
-        </Col>
-      </Row>
+      <!--      <Row class="search-params" :gutter="8" type="flex" align="middle">-->
+      <!--        <Col>-->
+      <!--          <TimeTypeSelect-->
+      <!--            v-model="value"-->
+      <!--            :types="types"-->
+      <!--            :show-type-values="['date', 'week', 'month', 'quarter']"-->
+      <!--            :datePicker="{-->
+      <!--              options: datePickerOptions,-->
+      <!--              valueFormat: 'yyyy-MM-dd',-->
+      <!--            }"-->
+      <!--            :ivew-row-props="{ gutter: 8, type: 'flex', align: 'middle' }"-->
+      <!--            @change="timeTypeChange"-->
+      <!--            class="select-time"-->
+      <!--          />-->
+      <!--        </Col>-->
+      <!--        <Col class="action">-->
+      <!--          &lt;!&ndash;          <Button type="primary" @click="search">查询</Button>&ndash;&gt;-->
+      <!--          <Button type="primary" @click="toggleEditing" :loading="updating">-->
+      <!--            {{ isEditing ? '保存指标' : '编辑指标' }}-->
+      <!--          </Button>-->
+      <!--          <Button type="warning" @click="cancel">取消编辑</Button>-->
+      <!--        </Col>-->
+      <!--        <Col v-show="isEditing" :span="24" class="text-danger">-->
+      <!--          当前表格处于编辑状态，编辑完成后，点击“保存指标”按钮，提交编辑的数据；（请逐页编辑保存）-->
+      <!--        </Col>-->
+      <!--      </Row>-->
+      <Space>
+        <TimeTypeSelect
+          v-model="value"
+          :types="types"
+          :show-type-values="['date', 'week', 'month', 'quarter']"
+          :datePicker="{
+            options: datePickerOptions,
+            valueFormat: 'yyyy-MM-dd',
+          }"
+          :ivew-row-props="{ gutter: 8, type: 'flex', align: 'middle' }"
+          @change="timeTypeChange"
+          class="select-time"
+        />
+        <Button type="primary" @click="toggleEditing" :loading="updating">
+          {{ isEditing ? '保存指标' : '编辑指标' }}
+        </Button>
+        <Button type="warning" @click="cancel">取消编辑</Button>
+      </Space>
       <Table
         @rowSave="onRowSave"
         ref="editTable"
@@ -41,6 +59,7 @@
 import Table from './components/EditTable/EditTable';
 import PageContent from './components/PageContent';
 import TimeTypeSelect from '@/components/TimeTypeSelect';
+import Space from '@/components/Space';
 
 export default {
   name: 'App',
@@ -85,6 +104,7 @@ export default {
     };
   },
   components: {
+    Space,
     Table,
     PageContent,
     TimeTypeSelect,
