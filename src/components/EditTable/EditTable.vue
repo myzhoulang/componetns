@@ -1,12 +1,12 @@
 <template>
   <div class="wrap">
-    {{ data }}
     <Table
-      :height="600"
+      ref="table"
       :columns="columns"
       :data="data"
       border
       class="table"
+      :height="`810`"
     ></Table>
     <div class="page">
       <Page
@@ -38,6 +38,7 @@ export default {
     // this.cacheData
     this.cacheData = data.map(item => ({ ...item }));
     return {
+      tableHeight: 0,
       current: {},
       columns: [],
       data: data,
@@ -163,6 +164,11 @@ export default {
   },
   created() {
     this.columns = createColums.bind(this)(columns);
+    console.log(this);
+    this.$nextTick(() => {
+      console.log(this.$refs.table.$el);
+      this.tableHeight = this.$refs.table.$el.offsetHeight;
+    });
   },
 };
 </script>

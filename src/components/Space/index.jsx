@@ -1,3 +1,4 @@
+import { filterEmpty } from '@/utils/props-util';
 const spaceSize = {
   small: 8,
   middle: 16,
@@ -10,9 +11,6 @@ const Space = {
   props: {
     size: {
       type: [String, Number],
-      validate(value) {
-        return ['small', 'middle', 'large'].includes(value);
-      },
     },
     direction: {
       type: String,
@@ -31,8 +29,8 @@ const Space = {
   render(h, content) {
     const { children } = content;
     const { size, direction, align } = content.props;
-
-    const len = children.length;
+    const items = filterEmpty(children);
+    const len = items.length;
 
     if (len < 1) {
       return null;
@@ -50,7 +48,7 @@ const Space = {
     ];
     return (
       <div class={spaceClassName}>
-        {children.map((child, i) => {
+        {items.map((child, i) => {
           return (
             <div
               class={itemClassName}

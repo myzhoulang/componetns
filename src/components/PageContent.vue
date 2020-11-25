@@ -13,5 +13,7 @@ export default {
 <style scoped>
 .page-content {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>

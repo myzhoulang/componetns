@@ -97,6 +97,7 @@
 <script>
 import * as dayjs from 'dayjs';
 import { weekFormart } from '@/utils/filters';
+import { getQuarter } from '@/utils/date';
 
 const dateType = ['date', 'week', 'month', 'daterange', 'quarter', 'year'];
 
@@ -169,7 +170,7 @@ export default {
     // 显示的风格是什么样的
     // 可选值 有 'select' 和 'radioGroup'
     showStyle: {
-      default: 'select',
+      default: 'radioGroup',
       validator(value) {
         return ['select', 'radioGroup'].includes(value);
       },
@@ -356,7 +357,12 @@ export default {
         return date.getTime() > new Date().getTime();
       },
       quarter(date) {
-        return date.getFullYear() > new Date().getFullYear();
+        const month = date.getMonth();
+        if (month < 3) {
+          return date.getFullYear() > new Date().getFullYear() - 1;
+        } else {
+          return date.getFullYear() > new Date().getFullYear();
+        }
       },
       year(date) {
         return date.getFullYear() > new Date().getFullYear();
@@ -437,44 +443,60 @@ export default {
       const oDate = dayjs(new Date());
       return [oDate.format('YYYY/MM/01'), oDate.format('YYYY/MM/DD')];
     },
+    // 获取当前时间的上一个季度
+    getPreQuarter() {
+      const { year, quarter } = getQuarter(-1);
+      return {
+        date: `${year}-${quarter * 3}-01`,
+        quarter,
+      };
+    },
 
     // 时间选择器类型改变
     timeTypeChange() {
       const { type } = this;
-      let date2 = new Date();
-      if (type === 'week') {
-        date2 = this.getWeekDays(Date.now());
-      } else if (type === 'daterange') {
-        date2 = this.getDateRange();
-      }
-      this.$emit('input', {
+      let date = new Date();
+      let value = {
         type,
-        date: date2,
-        quarter: type === 'quarter' ? 1 : '',
-      });
+        date,
+        quarter: 1,
+      };
+      if (type === 'week') {
+        value.date = this.getWeekDays(Date.now());
+      } else if (type === 'daterange') {
+        value.date = this.getDateRange();
+      } else if (type === 'quarter') {
+        if (this.disabledQuqrtes) {
+          const q = this.getPreQuarter();
+          value.date = q.date;
+          value.quarter = q.quarter;
+        }
+      }
+      this.$emit('input', value);
     },
 
     // 选择日期后的回调
     change() {
       const { type, date, quarter } = this;
-      let date2 = date;
-
+      const value = {
+        type,
+        date,
+        quarter,
+      };
       // 对类型为周的做特殊处理
       // 获取以选择的时间为基础计算当前一周的 年/月/日
       // 并通过失去光标来关闭日期选择器
       if (type === 'week') {
-        date2 = this.getWeekDays((date && date.pop()) || Date.now());
+        value.date = this.getWeekDays((date && date.pop()) || Date.now());
         this.$refs.showWeekText.blur();
       } else if (type === 'quarter') {
-        this.createQuqrtes();
+        // 在季度模式下并且季度限制有限制的情况下动态生成
+        // 季度来控制哪些季度可选
+        this.disabledQuqrtes && this.createQuqrtes();
       }
 
       this.isShowDatePicker = false;
-      this.$emit('input', {
-        type,
-        date: date2,
-        quarter,
-      });
+      this.$emit('input', value);
     },
   },
 };

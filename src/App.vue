@@ -1,8 +1,8 @@
 <template>
   <div id="app">
     <PageContent>
-      <!--      direction="vertical"-->
-      <Space :size="8" direction="horizontal" align="end">
+      <Space :size="8" direction="horizontal">
+        文本
         <TimeTypeSelect
           v-model="value"
           :disabled-quqrtes="true"
@@ -132,7 +132,10 @@ body,
 html {
   height: 100%;
 }
-
+* {
+  margin: 0;
+  padding: 0;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
