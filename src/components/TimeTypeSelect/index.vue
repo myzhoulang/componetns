@@ -72,6 +72,7 @@
           />
         </div>
       </Col>
+      <!--季度选项-->
       <Col v-show="type === 'quarter'">
         <Select
           v-model="quarter"
@@ -97,7 +98,15 @@
 <script>
 import * as dayjs from 'dayjs';
 import { weekFormart } from '@/utils/filters';
-import { getQuarter } from '@/utils/date';
+import {
+  getYear,
+  getWeeks,
+  createDisabledDate,
+  getMonth,
+  getRangeDate,
+  getDate,
+} from '@/utils/date';
+import { DATE_DEFAULT_FROMAT, DATE_TYPES, QUARTERS } from '@/utils/constant';
 
 const dateType = ['date', 'week', 'month', 'daterange', 'quarter', 'year'];
 
@@ -107,6 +116,13 @@ export default {
     weekFormart,
   },
   props: {
+    // 当切换类型选项的时候设置的默认值
+    // 在自定义禁用时间的时候，可以配置这个属性
+    // 设置默认值
+    defaultDateValue: {
+      type: Object,
+      default: () => ({}),
+    },
     // iview 中的 row props
     ivewRowProps: {
       type: Object,
@@ -123,14 +139,7 @@ export default {
     format: {
       type: Object,
       default() {
-        return {
-          date: 'yyyy/MM/dd',
-          month: 'yyyy/MM',
-          daterange: 'yyyy/MM/dd',
-          quarter: 'yyyy',
-          week: 'YYYY/MM/DD',
-          year: 'yyyy',
-        };
+        return DATE_DEFAULT_FROMAT;
       },
     },
 
@@ -151,10 +160,6 @@ export default {
       type: [Object, Boolean],
     },
 
-    // 季节下拉框禁止选择配置
-    disabledQuqrtes: {
-      type: Boolean,
-    },
     // 设置内部表单控件是否可以手动改动
     // 默认是都可以手动选择
     disableds: {
@@ -203,32 +208,7 @@ export default {
         return value.every(({ value }) => dateType.includes(value));
       },
       default() {
-        return [
-          {
-            value: 'date',
-            label: '按天',
-          },
-          {
-            value: 'week',
-            label: '按周',
-          },
-          {
-            value: 'month',
-            label: '按月',
-          },
-          {
-            value: 'daterange',
-            label: '按区间',
-          },
-          {
-            value: 'quarter',
-            label: '按季度',
-          },
-          {
-            value: 'year',
-            label: '按年',
-          },
-        ];
+        return DATE_TYPES;
       },
     },
 
@@ -239,24 +219,7 @@ export default {
         return value.every(({ value }) => [1, 2, 3, 4].includes(value));
       },
       default() {
-        return [
-          {
-            value: 1,
-            label: '第一季度',
-          },
-          {
-            value: 2,
-            label: '第二季度',
-          },
-          {
-            value: 3,
-            label: '第三季度',
-          },
-          {
-            value: 4,
-            label: '第四季度',
-          },
-        ];
+        return QUARTERS;
       },
     },
 
@@ -264,7 +227,7 @@ export default {
     include: {
       type: Array,
       validator(value) {
-        return dateType.includes(value);
+        return value.every(val => dateType.includes(val));
       },
     },
 
@@ -272,7 +235,7 @@ export default {
     exclude: {
       type: Array,
       validator(value) {
-        return dateType.includes(value);
+        return value.every(val => dateType.includes(val));
       },
     },
 
@@ -330,52 +293,16 @@ export default {
   },
   created() {
     const disabledType = typeof this.disabledDate;
+    const { type } = this.value;
 
-    this.createQuqrtes();
-
-    // 启用控制时间选择时，默认设置
-    const defaultDisabledDate = {
-      date(date) {
-        return date.getTime() > new Date().getTime();
-      },
-      week(date) {
-        return (
-          date.valueOf() >
-          dayjs(new Date())
-            .day(6)
-            .valueOf()
-        );
-      },
-      month(date) {
-        const oDate = new Date();
-        return (
-          date.getMonth() > oDate.getMonth() ||
-          date.getFullYear() > oDate.getFullYear()
-        );
-      },
-      daterange(date) {
-        return date.getTime() > new Date().getTime();
-      },
-      quarter(date) {
-        const month = date.getMonth();
-        if (month < 3) {
-          return date.getFullYear() > new Date().getFullYear() - 1;
-        } else {
-          return date.getFullYear() > new Date().getFullYear();
-        }
-      },
-      year(date) {
-        return date.getFullYear() > new Date().getFullYear();
-      },
-    };
     // 如果传入这个props 判断是否是一个对象还是一个布尔值
     // 如果是布尔值就使用 默认的控制时间规则
     // 如果是一个对象就使用传入的控制时间规则
-    if (typeof disabledType !== 'undefined') {
+    if (disabledType !== 'undefined') {
       this.options.disabledDate =
-        typeof disabledType === 'object'
-          ? this.disabledDate
-          : defaultDisabledDate;
+        disabledType === 'object'
+          ? createDisabledDate(this.disabledDate)
+          : createDisabledDate();
     }
 
     // 筛选出需要显示的时间类型
@@ -386,31 +313,26 @@ export default {
       );
     }
     if (this.exclude) {
-      timeTypes = this.types.filter(item =>
-        this.exclude.find(it => it !== item.value),
-      );
+      timeTypes = this.types.filter(item => !this.exclude.includes(item.value));
     }
     this.timeTypes = timeTypes;
+
+    if (type === 'quarter') {
+      this.createQuqrtes();
+    }
   },
   methods: {
     createQuqrtes() {
-      // 判断是否需要设置禁用某些季度的选择
-      if (!this.disabledQuqrtes) {
-        this.mergedQuarters = this.quarters;
-        return [];
-      }
       // 对季节做选择
-      const oToday = dayjs(new Date());
-      const oTodayForYear = oToday.year();
-      const oTodayForMonth = oToday.month();
-
-      const oDate = dayjs(this.date || oToday);
-      const oYear = oDate.year();
       const copyQuartes = this.quarters.map(item => ({ ...item }));
+      const { year, quarter } = this.options?.disabledDate?.quarters();
+      const { date } = this.value;
       this.mergedQuarters = copyQuartes.map(item => {
-        if (oYear >= oTodayForYear) {
-          item.disabled = item.value > oTodayForMonth / 3;
-        }
+        // 当选择的年份大于禁用的年份或者选择年份等于当前并且当前季度大于指定禁用的季度
+        // 就禁止选择当前季度
+        item.disabled =
+          (item.value > quarter && new Date(date).getFullYear() >= year) ||
+          new Date(date).getFullYear() > year;
         return item;
       });
       return this.mergedQuarters;
@@ -438,20 +360,6 @@ export default {
       return days;
     },
 
-    // 获取一个时间区间
-    getDateRange() {
-      const oDate = dayjs(new Date());
-      return [oDate.format('YYYY/MM/01'), oDate.format('YYYY/MM/DD')];
-    },
-    // 获取当前时间的上一个季度
-    getPreQuarter() {
-      const { year, quarter } = getQuarter(-1);
-      return {
-        date: `${year}-${quarter * 3}-01`,
-        quarter,
-      };
-    },
-
     // 时间选择器类型改变
     timeTypeChange() {
       const { type } = this;
@@ -461,15 +369,43 @@ export default {
         date,
         quarter: 1,
       };
-      if (type === 'week') {
-        value.date = this.getWeekDays(Date.now());
-      } else if (type === 'daterange') {
-        value.date = this.getDateRange();
-      } else if (type === 'quarter') {
-        if (this.disabledQuqrtes) {
-          const q = this.getPreQuarter();
-          value.date = q.date;
-          value.quarter = q.quarter;
+
+      // 如果设置了默认的值则使用默认的
+      if (this.defaultDateValue[type]) {
+        value.date = this.defaultDateValue[type === 'quarter' ? 'year' : type];
+        value.quarter = this.defaultDateValue['quarter'] || 1;
+      } else {
+        // 没有默认值就根据设置的 数值 计算出默认值
+        // 默认计算的默认值是当前时间
+        // 或者当传入了禁用时间，默认值就是 禁用时间 往前推 1天/周/月/季度/年
+        switch (type) {
+          case 'date':
+            value.date = getDate(undefined, this.disabledDate.date);
+            break;
+
+          case 'week':
+            value.date = getWeeks(undefined, this.disabledDate.week);
+            break;
+          case 'quarter':
+            // eslint-disable-next-line no-case-declarations
+            const { year, quarter } = this.options.disabledDate.quarters();
+            value.date = new Date(`${year}-${quarter * 3}-01`);
+            value.quarter = quarter;
+            break;
+
+          case 'year':
+            value.date = getYear(undefined, this.disabledDate.year);
+            break;
+
+          case 'month':
+            value.date = getMonth(undefined, this.disabledDate.month);
+            break;
+
+          case 'daterange':
+            // eslint-disable-next-line no-case-declarations
+            const date = getDate(undefined, this.disabledDate.range);
+            value.date = getRangeDate(date, date);
+            break;
         }
       }
       this.$emit('input', value);
@@ -492,7 +428,7 @@ export default {
       } else if (type === 'quarter') {
         // 在季度模式下并且季度限制有限制的情况下动态生成
         // 季度来控制哪些季度可选
-        this.disabledQuqrtes && this.createQuqrtes();
+        this.createQuqrtes();
       }
 
       this.isShowDatePicker = false;

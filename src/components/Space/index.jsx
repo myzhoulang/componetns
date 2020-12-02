@@ -9,6 +9,9 @@ const Space = {
   functional: true,
   name: 'Space',
   props: {
+    className: {
+      type: String,
+    },
     size: {
       type: [String, Number],
     },
@@ -28,7 +31,7 @@ const Space = {
   },
   render(h, content) {
     const { children } = content;
-    const { size, direction, align } = content.props;
+    const { size, direction, align, className } = content.props;
     const items = filterEmpty(children);
     const len = items.length;
 
@@ -41,6 +44,7 @@ const Space = {
       align === undefined && direction === 'horizontal' ? 'center' : align;
     const spaceClassName = [
       {
+        [className]: true,
         space: true,
         [`space-${direction}`]: true,
         [`space-align-${mergedAlign}`]: true,

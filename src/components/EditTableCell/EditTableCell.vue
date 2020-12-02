@@ -8,7 +8,7 @@
       v-show="!isShowInput"
     >
       <Col :span="editManner === 'cell' ? 19 : 24">
-        <div class="text">{{ text || '-' }}</div>
+        <div class="text">{{ value || '-' }}</div>
       </Col>
 
       <Col :span="5" v-show="isShowEditIcon" v-if="editManner === 'cell'">
@@ -43,6 +43,7 @@
             :placeholder="placeholder"
             :size="size"
             :transfer="true"
+            @on-change="change"
             v-model="value"
           >
             <Option
@@ -56,7 +57,7 @@
         </template>
 
         <template v-if="dataType === 'checkbox'">
-          <RadioGroup v-model="value">
+          <RadioGroup v-model="value" @on-change="change">
             <Radio
               :label="value"
               v-for="{ label, value } in options"
@@ -99,9 +100,11 @@
 
 <script>
 import Schema from 'async-validator';
+// eslint-disable-next-line no-unused-vars
 import dayjs from 'dayjs';
 
 let timer = null;
+// eslint-disable-next-line no-unused-vars
 let timer2 = null;
 export default {
   name: 'EditTableCell',
@@ -243,13 +246,14 @@ export default {
     },
 
     // 保存数据， 并通知父级
+    // eslint-disable-next-line no-unused-vars
     saveValue($event) {
       // 校验数据是否是合规的
-      const { dataKey, value, index } = this;
+      // const { dataKey, value, index } = this;
       return this.validate().then(errors => {
         if (!errors) {
           this.isShowInput = false;
-          this.$emit('cellChange', { dataKey, value, index }, $event);
+          // this.$emit('cellChange', { dataKey, value, index }, $event);
         } else {
           const message = errors.map(item => item.message).join('<br />');
           this.$Message.error(message);

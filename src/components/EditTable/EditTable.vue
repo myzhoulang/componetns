@@ -1,25 +1,12 @@
 <template>
   <div class="wrap">
-    <Table
-      ref="table"
-      :columns="columns"
+    <!--    {{ cacheData }}-->
+    <ZTable
       :data="data"
-      border
-      class="table"
-      :height="`810`"
-    ></Table>
-    <div class="page">
-      <Page
-        @on-change="changePage"
-        @on-page-size-change="pageSizeChange"
-        :total="40"
-        show-elevator
-        show-sizer
-        show-total
-        :page-size="params.pageSize"
-        :current="params.current"
-      />
-    </div>
+      :columns="columns"
+      :page="params"
+      :iview-table-props="{ border: true }"
+    />
   </div>
 </template>
 
@@ -27,6 +14,7 @@
 import createColums from '@/utils/createColums';
 import { columns } from '@/columns';
 import { data } from '../../mock/app';
+import ZTable from '@/components/ZTable';
 
 /**
  * 可编辑的表格.
@@ -34,17 +22,22 @@ import { data } from '../../mock/app';
  */
 export default {
   name: 'EditTable',
+  components: {
+    ZTable,
+  },
   data() {
     // this.cacheData
-    this.cacheData = data.map(item => ({ ...item }));
+    // this.cacheData = data.map(item => ({ ...item }));
     return {
+      cacheData: data.map(item => ({ ...item })),
       tableHeight: 0,
       current: {},
       columns: [],
-      data: data,
+      data: [],
       params: {
         current: 1,
         pageSize: 20,
+        total: 0,
       },
     };
   },
@@ -125,29 +118,34 @@ export default {
     // 单元格编辑触发的回调
     cellChange({ value, dataKey, invalid, index }) {
       this.$set(
-        this.data,
+        this.cacheData,
         index,
-        Object.assign(this.data[index], { [dataKey]: value, invalid }),
+        Object.assign(this.cacheData[index], { [dataKey]: value, invalid }),
       );
     },
     // 当前行的编辑
     // 编辑形式(editManner: 'row')的时候用到
+    // eslint-disable-next-line no-unused-vars
     rowEdit({ row, index }) {
       this.current = row;
       this.$set(this.data[index], 'isEditing', true);
     },
     // 当前行的保存
     // 编辑形式(editManner: 'row')的时候用到
+    // eslint-disable-next-line no-unused-vars
     rowSave({ row, index }) {
       this.validate().then(() => {
+        console.log('data:', row);
         this.$emit('rowSave', row);
-
+        // row.updating = true;
         // 模拟请求
         this.$set(this.data[index], 'updating', true);
         setTimeout(() => {
           this.$Message.info('保存成功');
           this.$set(this.data[index], 'isEditing', false);
           this.$set(this.data[index], 'updating', false);
+          // row.isEditing = false;
+          // row.updating = false;
         }, 1000);
       });
     },
@@ -164,10 +162,10 @@ export default {
   },
   created() {
     this.columns = createColums.bind(this)(columns);
-    console.log(this);
-    this.$nextTick(() => {
-      console.log(this.$refs.table.$el);
-      this.tableHeight = this.$refs.table.$el.offsetHeight;
+
+    setTimeout(() => {
+      this.data = data;
+      this.params.total = 10;
     });
   },
 };

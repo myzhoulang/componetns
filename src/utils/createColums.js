@@ -20,6 +20,7 @@ const createColums = function(colums = []) {
         col.render = (h, { row, column, index }) => {
           const newRules = [];
           const { editManner = 'cell', isEditing = false } = this;
+
           const isEditings = {
             cell: false,
             row: row.isEditing,

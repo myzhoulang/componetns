@@ -1,16 +1,22 @@
 <template>
   <div id="app">
     <PageContent>
-      <Space :size="8" direction="horizontal">
-        文本
+      <Space :size="8" direction="horizontal" className="search-params">
+        {{ value }}
         <TimeTypeSelect
           v-model="value"
-          :disabled-quqrtes="true"
-          :types="types"
-          :show-type-values="['date', 'week', 'month', 'quarter']"
+          :include="['date', 'week', 'month', 'quarter', 'year', 'daterange']"
           :datePicker="{
             options: datePickerOptions,
             valueFormat: 'yyyy-MM-dd',
+          }"
+          :disabled-date="{
+            date: -1,
+            quarter: -1,
+            week: -1,
+            year: -1,
+            month: -2,
+            range: -1,
           }"
           :ivew-row-props="{ gutter: 8, type: 'flex', align: 'middle' }"
           @change="timeTypeChange"
@@ -36,20 +42,17 @@ import Table from './components/EditTable/EditTable';
 import PageContent from './components/PageContent';
 import TimeTypeSelect from '@/components/TimeTypeSelect';
 import Space from '@/components/Space';
+import { dateDisabled } from '@/utils/date';
 
 export default {
   name: 'App',
   data() {
     return {
+      dateDisabled,
       updating: false,
-      // value: {
-      //   type: 'month',
-      //   date: null,
-      //   quarter: '',
-      // },
       value: {
         type: 'quarter',
-        date: '2020',
+        date: new Date(),
         quarter: 1,
       },
       datePickerOptions: {
@@ -59,28 +62,6 @@ export default {
         },
       },
       editManner: 'row',
-      types: [
-        {
-          value: 'date',
-          label: '按天',
-        },
-        {
-          value: 'week',
-          label: '按周',
-        },
-        {
-          value: 'month',
-          label: '按月',
-        },
-        {
-          value: 'quarter',
-          label: '按季度',
-        },
-        {
-          value: 'year',
-          label: '按年',
-        },
-      ],
       isEditing: false,
     };
   },
